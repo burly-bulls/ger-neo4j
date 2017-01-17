@@ -1,0 +1,25 @@
+{
+  "name": "ger-neo4j",
+  "version": "1.0.0",
+  "description": "A good enough recommendation engine using the neo4j graph database",
+  "main": "index.js",
+  "repository": "https://github.com/burly-bulls/ger-neo4j",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ger",
+    "neo4j",
+    "recommendation",
+    "engine",
+    "suggestion",
+    "filter"
+  ],
+  "author": "Bruce Paul <brucewpaul@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^1.2.1",
+    "bluebird": "^3.4.7",
+    "neo4j-driver": "^1.0.5"
+  }
+}
