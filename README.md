@@ -20,7 +20,8 @@ var filter = require('ger-neo4j');
 # * @param {array} items - array of items for the items - required
 # * @param {object} config - config for the setup of neo4j; needs server, user, password properties
 #          to login to neo4j. Also accepts a frequency property to dictate when to clear the config.
-#          Set to 0 if you don't want a delay.
+#          Set to 0 if you don't want a delay, or use the following format to use a custom timeframe:
+#          https://www.npmjs.com/package/cron
 # * @param {function} callback - a call back function that get's called on success or error
 # **/
 filter.init(Categories, Items, config, function(err, msg) {

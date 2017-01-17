@@ -10,9 +10,32 @@ var util = require('./util.js');
 
 var driver;
 
+var frequency;
+
+
 var initNeo4j = function(categories, items, neo4jConfig, cb) {
 
   cb = cb || function() {};
+
+  frequency = neo4jConfig.frequency || null;
+
+  if ( frequency === 0 ) {
+    new CronJob(frequency, function() { // cron job happens every hour
+      // will this cause problems? having a while loop in here? should it be in a seperate file?
+      while ( queue.size() > 0) {
+        saveConfig(queue.dequeue());
+      }
+
+    }, null, true, 'America/Los_Angeles');
+  } else if ( frequency !== 0) {
+    new CronJob('0 0 * * * *', function() { // cron job happens every hour
+      // will this cause problems? having a while loop in here? should it be in a seperate file?
+      while ( queue.size() > 0) {
+        saveConfig(queue.dequeue());
+      }
+
+    }, null, true, 'America/Los_Angeles');
+  }
 
   driver = driver = neo4j.driver("bolt://" + neo4jConfig.server, neo4j.auth.basic(neo4jConfig.user, neo4jConfig.password));
 
@@ -119,7 +142,11 @@ var initNeo4j = function(categories, items, neo4jConfig, cb) {
 var queue = queueInstance();
 
 var queueConfig = function(config) {
-  queue.enqueue(config);
+  if ( frequency === 0 ) {
+    saveConfig(config);
+  } else {
+    queue.enqueue(config);
+  }
 }
 
 var saveConfig = function(config) { // config = {category: 'React', items: ['cssmin', 'watch']}
@@ -222,23 +249,3 @@ module.exports = {
   queueConfig: queueConfig,
   init: initNeo4j
 }
-
-// queueConfig({category: 'React', items: ['cssmin', 'sass', 'uglify']})
-// queueConfig({category: 'React', items: ['cssmin', 'watch', 'uglify']})
-
-// getRecommendations({category: 'angular', items: ['watch', 'uglify']}, function(err, recommendations) {
-//   if ( err ) {
-//     console.log(err);
-//   }
-//   console.log(recommendations);
-// })
-
-
-new CronJob('0 0 * * * *', function() { // cron job happens every hour
-  // will this cause problems? having a while loop in here? should it be in a seperate file?
-  console.log('fire cron')
-  while ( queue.size() > 0) {
-    saveConfig(queue.dequeue());
-  }
-
-}, null, true, 'America/Los_Angeles');
