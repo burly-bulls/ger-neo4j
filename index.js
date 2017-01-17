@@ -10,11 +10,11 @@ var util = require('./util.js');
 
 var driver;
 
-var initNeo4j = function(categories, items, config, cb) {
+var initNeo4j = function(categories, items, neo4jConfig, cb) {
 
   cb = cb || function() {};
 
-  driver = driver = neo4j.driver("bolt://" + config.neo4j.server, neo4j.auth.basic(config.neo4j.user, config.neo4j.password));
+  driver = driver = neo4j.driver("bolt://" + neo4jConfig.server, neo4j.auth.basic(neo4jConfig.user, neo4jConfig.password));
 
   var session = driver.session();
   var promises = [];
