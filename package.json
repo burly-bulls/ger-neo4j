@@ -16,5 +16,10 @@
     "filter"
   ],
   "author": "Bruce Paul <brucewpaul@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^1.2.1",
+    "bluebird": "^3.4.7",
+    "neo4j-driver": "^1.0.5"
+  }
 }
