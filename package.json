@@ -1,6 +1,6 @@
 {
   "name": "ger-neo4j",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A good enough recommendation engine using the neo4j graph database",
   "main": "index.js",
   "repository": "https://github.com/burly-bulls/ger-neo4j",

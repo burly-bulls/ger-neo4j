@@ -33,13 +33,32 @@ filter.init(Categories, Items, config, function(err, msg) {
 });
 ```
 
-Once initialized, you can add an object with the category and an array of items you want related to the database with queueConfig.
+Once initialized, you can do the following:
+
+Add Category
+
+```sh
+#/**
+# * @param {string} category - string of the name of the category
+# * @param {function} callback - a call back function that send back an error if there is one
+# **/
+addNewCategory(category, cb)
+```
+
+Add Item
+
+```sh
+#/**
+# * @param {string} item - string of the name of the item
+# * @param {function} callback - a call back function that send back an error if there is one
+# **/
+addNewItem(item, cb)
 
 Adding a relationship
 
 ```sh
 #/**
-# * @param {Obecjt} category, items - object containing a category property that takes a string
+# * @param {object} category, items - object containing a category property that takes a string
 #          and an items propetrty that takes an array
 # **/
 queueConfig({category: 'Category', items: ['items1', 'items2', 'items3']})
@@ -50,7 +69,7 @@ queueConfig({category: 'Category', items: ['items1', 'items2', 'items3']})
 Asking for Recommendations
 
 ```sh
-# * @param {Obecjt} category, items - object containing a category property that takes a string
+# * @param {object} category, items - object containing a category property that takes a string
 #          and an items propetrty that takes an array
 # * @param {function} callback - a call back function that get's called on success with
 #          recommendations or an error

@@ -92,7 +92,7 @@ var initNeo4j = function(categories, items, neo4jConfig, cb) {
       promises.push(
         new Promise(function(resolve,reject) {
           session
-            .run(`MATCH (c:Category { name: {category} }), (i:Item { name: {item} }) MERGE (c)-[:HAS]->(i)`, {category: categories[i], item: items[j]})
+            .run(`MATCH (c:Category { name: {category} }), (i:Item { name: {item} }) MERGE (c)-[:HAS {value: 0}]->(i)`, {category: categories[i], item: items[j]})
             .then( function() {
               session.close();
               driver.close();
@@ -149,12 +149,54 @@ var queueConfig = function(config) {
   }
 }
 
+var addNewItem = function(item, cb) {
+  var session = driver.session();
+
+  new Promise(function(resolve,reject) {
+    session
+      .run( `MATCH (n:Item) MERGE (p:Item {name: {item}}) MERGE (p)-[:RECOMMENDS]-(n) MERGE (n)-[r:RECOMMENDS]->(p) RETURN n,p`, {item: item})
+      .then( function() {
+        session.close();
+        driver.close();
+        cb();
+        resolve();
+      })
+      .catch(function(err) {
+        session.close();
+        driver.close();
+        cb(err);
+        reject(err);
+      });
+  });
+}
+
+var addNewCategory = function(category, cb) {
+  var session = driver.session();
+
+  new Promise(function(resolve,reject) {
+    session
+      .run( `MATCH (i:Item) MERGE (c:Category { name: {category} }) MERGE (c)-[r:HAS {value: 0}]->(i)`, {category: category})
+      .then( function() {
+        session.close();
+        driver.close();
+        cb();
+        resolve();
+      })
+      .catch(function(err) {
+        session.close();
+        driver.close();
+        cb(err);
+        reject(err);
+      });
+  });
+}
+
 var saveConfig = function(config) { // config = {category: 'React', items: ['cssmin', 'watch']}
   if (!config) {
     return;
   };
 
-  addItem({
+  addPackage({
     items: config.items,
     category: config.category
   });
@@ -169,53 +211,88 @@ var getRecommendations = function(config, cb) {
   var storage = {};
   var promises = [];
   var result = [];
-
-  config.items.forEach(function(item) {
-    promises.push(
-      new Promise(function(resolve,reject) {
-        session
-          .run( `MATCH (a:Item {name: {itemName}})-[r:RECOMMENDS]->(b:Item) WHERE NOT b.name IN {otherItems} RETURN properties(a),properties(r),properties(b)`, { itemName: item, otherItems: config.items } )
-          .then( function( result ) {
-            if ( result.records.length > 0 ) {
-              result.records.forEach(function(record) {
-                var name = record._fields[2].name;
-                var value = record._fields[1][`${config.category.toLowerCase()}Value`].toInt();
-                if ( storage[name] ) {
-                  storage[name] += value;
-                } else {
-                  storage[name] = value;
-                }
-              });
+  if ( config.items.length === 0 ) {
+    session
+      .run( `MATCH (c:Category {name: {category}})-[r:HAS]->(i:Item) RETURN properties(c),properties(r),properties(i)`, { category: config.category } )
+      .then( function( result ) {
+        if ( result.records.length > 0 ) {
+          result.records.forEach(function(record) {
+            // console.log(record)
+            var name = record._fields[2].name;
+            var value = record._fields[1][`value`].toInt();
+            if ( storage[name] ) {
+              storage[name] += value;
+            } else {
+              storage[name] = value;
             }
-          })
-          .then(() => {
-            session.close();
-            driver.close();
-            resolve();
-          })
-          .catch(function(err) {
-            session.close();
-            driver.close();
-            reject(err);
           });
+        }
+        return storage
       })
-    )
-  });
+      .then((results) => {
+        session.close();
+        driver.close();
+        for ( var k in storage ) {
+        result.push({name: k, value: storage[k]})
+        }
+        cb(null, result.sort(function(a, b) {
+          return b.value - a.value
+        }))
+      })
+      .catch(function(err) {
+        session.close();
+        driver.close();
+        cb(err);
+      });
+  } else {
+    config.items.forEach(function(item) {
+      promises.push(
+        new Promise(function(resolve,reject) {
+          session
+            .run( `MATCH (a:Item {name: {itemName}})-[r:RECOMMENDS]->(b:Item) WHERE NOT b.name IN {otherItems} RETURN properties(a),properties(r),properties(b)`, { itemName: item, otherItems: config.items } )
+            .then( function( result ) {
+              if ( result.records.length > 0 ) {
+                result.records.forEach(function(record) {
+                  var name = record._fields[2].name;
+                  var value = record._fields[1][`${config.category.toLowerCase()}Value`].toInt();
+                  if ( storage[name] ) {
+                    storage[name] += value;
+                  } else {
+                    storage[name] = value;
+                  }
+                });
+              }
+            })
+            .then(() => {
+              session.close();
+              driver.close();
+              resolve();
+            })
+            .catch(function(err) {
+              session.close();
+              driver.close();
+              reject(err);
+            });
+        })
+      )
+    });
 
-  Promise.all(promises).then(() => {
-    for ( var k in storage ) {
-      result.push({name: k, value: storage[k]})
-    }
-    cb(null, result.sort(function(a, b) {
-      return b.value - a.value
-    }))
-  })
-  .catch(function(e) {
-    cb(new Error(e));
-  });
+    Promise.all(promises).then(() => {
+      for ( var k in storage ) {
+        result.push({name: k, value: storage[k]})
+      }
+      cb(null, result.sort(function(a, b) {
+        return b.value - a.value
+      }))
+    })
+    .catch(function(e) {
+      cb(new Error(e));
+    });
+  }
+
 }
 
-var addItem = function(config) {
+var addPackage = function(config) {
   var session = driver.session();
   if (config.items.length < 2) {
     return;
@@ -225,15 +302,18 @@ var addItem = function(config) {
     session
       .run( `MATCH (a:Item {name: {item1} })-[r:RECOMMENDS]-(b:Item {name: {item2} }) SET r.${config.category.toLowerCase()}Value = r.${config.category.toLowerCase()}Value + 1`, {item1: uniqueCombinations[i][0], item2: uniqueCombinations[i][1]})
       .then( function( result ) {
-        result.records.forEach(function(record) {
-          var name = record._fields[2].name;
-          var value = record._fields[1][`${config.category.toLowerCase()}Value`].toInt();
-          if ( storage[name] ) {
-            storage[name] += value;
-          } else {
-            storage[name] = value;
-          }
-        });
+        session.close();
+        driver.close();
+      })
+      .catch(function(err) {
+        session.close();
+        driver.close();
+      });
+  }
+  for ( var j = 0; j < config.items.length; j++) {
+    session
+      .run( `MATCH (c:Category {name: {category} })-[r:HAS]-(i:Item {name: {item} }) SET r.value = r.value + 1`, {category: config.category, item: config.items[j]})
+      .then( function( result ) {
         session.close();
         driver.close();
       })
@@ -247,5 +327,7 @@ var addItem = function(config) {
 module.exports = {
   getRecommendations: getRecommendations,
   queueConfig: queueConfig,
-  init: initNeo4j
+  init: initNeo4j,
+  addNewItem: addNewItem,
+  addNewCategory: addNewCategory
 }
