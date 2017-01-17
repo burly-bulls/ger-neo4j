@@ -1,0 +1,19 @@
+{
+  "name": "ger-neo4j",
+  "version": "1.0.0",
+  "description": "A good enough recommendation engine using the neo4k graph database",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ger",
+    "neo4j",
+    "recommendation",
+    "engine",
+    "suggestion",
+    "filter"
+  ],
+  "author": "Bruce Paul <brucewpaul@gmail.com>",
+  "license": "ISC"
+}
